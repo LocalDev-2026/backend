@@ -1,0 +1,97 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../database');
+const { auth, checkRole } = require('../middleware/auth');
+
+// @route   GET api/listings
+// @desc    Get all listings (with filters)
+// @access  Public
+router.get('/', (req, res) => {
+    const { category, minPrice, maxPrice, minRating } = req.query;
+    let query = "SELECT * FROM listings WHERE status = 'approved'";
+    let params = [];
+
+    if (category) {
+        query += " AND category = ?";
+        params.push(category);
+    }
+    if (minPrice) {
+        query += " AND price >= ?";
+        params.push(minPrice);
+    }
+    if (maxPrice) {
+        query += " AND price <= ?";
+        params.push(maxPrice);
+    }
+    if (minRating) {
+        query += " AND rating >= ?";
+        params.push(minRating);
+    }
+
+    db.all(query, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Parse JSON strings back to arrays/objects
+        const listings = rows.map(row => ({
+            ...row,
+            images: row.images ? JSON.parse(row.images) : [],
+            amenities: row.amenities ? JSON.parse(row.amenities) : []
+        }));
+        res.json(listings);
+    });
+});
+
+// @route   GET api/listings/:id
+// @desc    Get single listing
+// @access  Public
+router.get('/:id', (req, res) => {
+    db.get("SELECT * FROM listings WHERE id = ?", [req.params.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(404).json({ msg: 'Listing not found' });
+
+        const listing = {
+            ...row,
+            images: row.images ? JSON.parse(row.images) : [],
+            amenities: row.amenities ? JSON.parse(row.amenities) : []
+        };
+        res.json(listing);
+    });
+});
+
+// @route   POST api/listings
+// @desc    Create a listing
+// @access  Private (Host/Admin)
+router.post('/', [auth, checkRole(['host', 'admin'])], (req, res) => {
+    const { title, category, price, location, description, images, amenities, availableRooms, maxGuests } = req.body;
+    const hostId = req.user.id;
+
+    const query = `INSERT INTO listings 
+        (hostId, title, category, price, location, description, images, amenities, availableRooms, maxGuests, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const params = [
+        hostId, title, category, price, location, description,
+        JSON.stringify(images || []),
+        JSON.stringify(amenities || []),
+        availableRooms, maxGuests,
+        'pending' // Always pending by default
+    ];
+
+    db.run(query, params, function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: this.lastID, msg: 'Listing submitted for approval' });
+    });
+});
+
+// @route   PATCH api/listings/:id/status
+// @desc    Update listing status (Approve/Reject)
+// @access  Private (Admin)
+router.patch('/:id/status', [auth, checkRole(['admin'])], (req, res) => {
+    const { status } = req.body;
+    db.run("UPDATE listings SET status = ? WHERE id = ?", [status, req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ msg: `Listing status updated to ${status}` });
+    });
+});
+
+module.exports = router;
