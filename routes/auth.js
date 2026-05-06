@@ -23,7 +23,7 @@ router.post('/register', (req, res) => {
         db.run("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
             [name, email, hashedPassword, role || 'tourist'],
             function (err) {
-                if (err) return res.status(500).json({ error: err.message });
+                if (err) return res.status(500).json({ msg: err.message });
 
                 const userId = this.lastID;
                 jwt.sign(
