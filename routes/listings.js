@@ -7,9 +7,16 @@ const { auth, checkRole } = require('../middleware/auth');
 // @desc    Get all listings (with filters)
 // @access  Public
 router.get('/', (req, res) => {
-    const { category, minPrice, maxPrice, minRating } = req.query;
-    let query = "SELECT * FROM listings WHERE status = 'approved'";
+    const { category, minPrice, maxPrice, minRating, status } = req.query;
+    let query = "SELECT * FROM listings WHERE 1=1";
     let params = [];
+
+    if (status && status !== 'all') {
+        query += " AND status = ?";
+        params.push(status);
+    } else if (!status) {
+        query += " AND status = 'approved'";
+    }
 
     if (category) {
         query += " AND category = ?";

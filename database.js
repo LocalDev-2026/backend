@@ -62,6 +62,55 @@ db.serialize(() => {
             console.log('Seed users created.');
         }
     });
+    // Seed initial listings if empty
+    db.get("SELECT count(*) as count FROM listings", (err, row) => {
+        if (row && row.count === 0) {
+            const initialListings = [
+                {
+                    hostId: 2,
+                    title: 'Cozy Yurt in Tash Rabat',
+                    category: 'guesthouse',
+                    price: 35,
+                    location: 'Tash Rabat, Naryn',
+                    description: 'Experience authentic nomadic life in a comfortable yurt near the historic Tash Rabat Caravanserai.',
+                    images: JSON.stringify(['https://images.unsplash.com/photo-1551632811-561732d1e306?w=1200&q=80']),
+                    amenities: JSON.stringify(['Breakfast', 'Hiking', 'Parking', 'Heating']),
+                    availableRooms: 3,
+                    maxGuests: 4,
+                    status: 'approved',
+                    rating: 4.8,
+                    reviews: 24
+                },
+                {
+                    hostId: 2,
+                    title: 'Naryn River Breeze Hotel',
+                    category: 'resort',
+                    price: 65,
+                    location: 'Naryn Riverside',
+                    description: 'A premium riverside resort offering stunning mountain views and modern amenities.',
+                    images: JSON.stringify(['https://images.unsplash.com/photo-1625244724123-1ee70e28f145?w=1200&q=80']),
+                    amenities: JSON.stringify(['WiFi', 'Kitchen', 'Hot Shower', 'Restaurant', 'Gym']),
+                    availableRooms: 8,
+                    maxGuests: 3,
+                    status: 'approved',
+                    rating: 4.6,
+                    reviews: 15
+                }
+            ];
+
+            const insertQuery = `INSERT INTO listings 
+                (hostId, title, category, price, location, description, images, amenities, availableRooms, maxGuests, status, rating, reviews) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+            initialListings.forEach(l => {
+                db.run(insertQuery, [
+                    l.hostId, l.title, l.category, l.price, l.location, l.description,
+                    l.images, l.amenities, l.availableRooms, l.maxGuests, l.status, l.rating, l.reviews
+                ]);
+            });
+            console.log('Seed listings created.');
+        }
+    });
 });
 
 module.exports = db;
