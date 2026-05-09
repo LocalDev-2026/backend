@@ -48,6 +48,21 @@ router.get('/', (req, res) => {
     });
 });
 
+// @route   GET api/listings/my-listings
+// @desc    Get current host's listings
+// @access  Private (Host)
+router.get('/my-listings', [auth, checkRole(['host'])], (req, res) => {
+    db.all("SELECT * FROM listings WHERE hostId = ?", [req.user.id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const listings = rows.map(row => ({
+            ...row,
+            images: row.images ? JSON.parse(row.images) : [],
+            amenities: row.amenities ? JSON.parse(row.amenities) : []
+        }));
+        res.json(listings);
+    });
+});
+
 // @route   GET api/listings/:id
 // @desc    Get single listing
 // @access  Public

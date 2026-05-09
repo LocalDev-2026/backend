@@ -15,6 +15,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/listings', require('./routes/listings'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/requests', require('./routes/requests'));
 
 app.get('/', (req, res) => {
     res.send('Naryn Tourism API is running');

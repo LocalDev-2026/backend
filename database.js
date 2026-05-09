@@ -26,6 +26,7 @@ db.serialize(() => {
         location TEXT NOT NULL,
         description TEXT,
         images TEXT, -- JSON string of image URLs
+        videoUrl TEXT,
         rating REAL DEFAULT 0,
         reviews INTEGER DEFAULT 0,
         status TEXT DEFAULT 'pending',
@@ -45,6 +46,21 @@ db.serialize(() => {
         totalPrice REAL NOT NULL,
         FOREIGN KEY (listingId) REFERENCES listings (id),
         FOREIGN KEY (touristId) REFERENCES users (id)
+    )`);
+
+    // Content Requests table
+    db.run(`CREATE TABLE IF NOT EXISTS content_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostId INTEGER NOT NULL,
+        listingId INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        images TEXT, -- JSON string of image URLs
+        videoUrl TEXT,
+        description TEXT,
+        status TEXT DEFAULT 'pending',
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (hostId) REFERENCES users (id),
+        FOREIGN KEY (listingId) REFERENCES listings (id)
     )`);
 
     // Seed initial users if empty
