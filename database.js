@@ -13,7 +13,9 @@ db.serialize(() => {
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'tourist',
-        avatar TEXT
+        avatar TEXT,
+        businessName TEXT,
+        businessDescription TEXT
     )`);
 
     // Listings table
@@ -26,7 +28,7 @@ db.serialize(() => {
         location TEXT NOT NULL,
         description TEXT,
         images TEXT, -- JSON string of image URLs
-        videoUrl TEXT,
+        videos TEXT, -- JSON string of video URLs
         rating REAL DEFAULT 0,
         reviews INTEGER DEFAULT 0,
         status TEXT DEFAULT 'pending',
@@ -55,7 +57,7 @@ db.serialize(() => {
         listingId INTEGER NOT NULL,
         type TEXT NOT NULL,
         images TEXT, -- JSON string of image URLs
-        videoUrl TEXT,
+        videos TEXT,
         description TEXT,
         status TEXT DEFAULT 'pending',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -71,8 +73,8 @@ db.serialize(() => {
 
             db.run("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
                 ['Alice Tourist', 'alice@example.com', hashedPw, 'tourist']);
-            db.run("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-                ['Bob Host', 'bob@example.com', hashedPw, 'host']);
+            db.run("INSERT INTO users (name, email, password, role, businessName, businessDescription) VALUES (?, ?, ?, ?, ?, ?)",
+                ['Bob Host', 'bob@example.com', hashedPw, 'host', 'Bob\'s Adventures', 'We offer the best guesthouses and ski trips in Naryn!']);
             db.run("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
                 ['Admin User', 'admin@naryn.com', hashedPw, 'admin']);
             console.log('Seed users created.');

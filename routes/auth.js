@@ -32,9 +32,9 @@ router.post('/register', (req, res) => {
                     { expiresIn: 3600 },
                     (err, token) => {
                         if (err) throw err;
-                        res.json({
+                        res.status(201).json({
                             token,
-                            user: { id: userId, name, email, role: role || 'tourist' }
+                            user: { id: userId, name, email, role: role || 'tourist', businessName: null, businessDescription: null }
                         });
                     }
                 );
@@ -67,7 +67,7 @@ router.post('/login', (req, res) => {
                     if (err) throw err;
                     res.json({
                         token,
-                        user: { id: user.id, name: user.name, email: user.email, role: user.role }
+                        user: { id: user.id, name: user.name, email: user.email, role: user.role, businessName: user.businessName, businessDescription: user.businessDescription }
                     });
                 }
             );

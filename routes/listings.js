@@ -42,6 +42,7 @@ router.get('/', (req, res) => {
         const listings = rows.map(row => ({
             ...row,
             images: row.images ? JSON.parse(row.images) : [],
+            videos: row.videos ? JSON.parse(row.videos) : [],
             amenities: row.amenities ? JSON.parse(row.amenities) : []
         }));
         res.json(listings);
@@ -57,6 +58,7 @@ router.get('/my-listings', [auth, checkRole(['host'])], (req, res) => {
         const listings = rows.map(row => ({
             ...row,
             images: row.images ? JSON.parse(row.images) : [],
+            videos: row.videos ? JSON.parse(row.videos) : [],
             amenities: row.amenities ? JSON.parse(row.amenities) : []
         }));
         res.json(listings);
@@ -67,13 +69,19 @@ router.get('/my-listings', [auth, checkRole(['host'])], (req, res) => {
 // @desc    Get single listing
 // @access  Public
 router.get('/:id', (req, res) => {
-    db.get("SELECT * FROM listings WHERE id = ?", [req.params.id], (err, row) => {
+    const query = `
+        SELECT l.*, u.name as hostName, u.avatar as hostAvatar, u.businessName 
+        FROM listings l 
+        JOIN users u ON l.hostId = u.id 
+        WHERE l.id = ?`;
+    db.get(query, [req.params.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ msg: 'Listing not found' });
 
         const listing = {
             ...row,
             images: row.images ? JSON.parse(row.images) : [],
+            videos: row.videos ? JSON.parse(row.videos) : [],
             amenities: row.amenities ? JSON.parse(row.amenities) : []
         };
         res.json(listing);
@@ -84,16 +92,17 @@ router.get('/:id', (req, res) => {
 // @desc    Create a listing
 // @access  Private (Host/Admin)
 router.post('/', [auth, checkRole(['host', 'admin'])], (req, res) => {
-    const { title, category, price, location, description, images, amenities, availableRooms, maxGuests } = req.body;
+    const { title, category, price, location, description, images, videos, amenities, availableRooms, maxGuests } = req.body;
     const hostId = req.user.id;
 
     const query = `INSERT INTO listings 
-        (hostId, title, category, price, location, description, images, amenities, availableRooms, maxGuests, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        (hostId, title, category, price, location, description, images, videos, amenities, availableRooms, maxGuests, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const params = [
         hostId, title, category, price, location, description,
         JSON.stringify(images || []),
+        JSON.stringify(videos || []),
         JSON.stringify(amenities || []),
         availableRooms, maxGuests,
         'pending' // Always pending by default
@@ -101,7 +110,7 @@ router.post('/', [auth, checkRole(['host', 'admin'])], (req, res) => {
 
     db.run(query, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID, msg: 'Listing submitted for approval' });
+        res.status(201).json({ id: this.lastID, msg: 'Listing submitted for approval' });
     });
 });
 
@@ -112,7 +121,7 @@ router.patch('/:id/status', [auth, checkRole(['admin'])], (req, res) => {
     const { status } = req.body;
     db.run("UPDATE listings SET status = ? WHERE id = ?", [status, req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ msg: `Listing status updated to ${status}` });
+        res.json({ msg: 'Listing approved successfully' });
     });
 });
 

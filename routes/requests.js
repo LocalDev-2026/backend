@@ -7,7 +7,7 @@ const { auth, checkRole } = require('../middleware/auth');
 // @desc    Create a content request
 // @access  Private (Host)
 router.post('/', [auth, checkRole(['host'])], (req, res) => {
-    const { listingId, type, images, videoUrl, description } = req.body;
+    const { listingId, type, images, videos, description } = req.body;
     const hostId = req.user.id;
 
     if (!listingId || !type) {
@@ -15,19 +15,19 @@ router.post('/', [auth, checkRole(['host'])], (req, res) => {
     }
 
     const query = `INSERT INTO content_requests 
-        (hostId, listingId, type, images, videoUrl, description, status) 
+        (hostId, listingId, type, images, videos, description, status) 
         VALUES (?, ?, ?, ?, ?, ?, 'pending')`;
 
     const params = [
         hostId, listingId, type,
         images ? JSON.stringify(images) : null,
-        videoUrl || null,
+        videos ? JSON.stringify(videos) : null,
         description || null
     ];
 
     db.run(query, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID, msg: 'Content request submitted' });
+        res.status(201).json({ id: this.lastID, msg: 'Content request submitted' });
     });
 });
 
@@ -46,7 +46,8 @@ router.get('/my-requests', [auth, checkRole(['host'])], (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         const requests = rows.map(row => ({
             ...row,
-            images: row.images ? JSON.parse(row.images) : []
+            images: row.images ? JSON.parse(row.images) : [],
+            videos: row.videos ? JSON.parse(row.videos) : []
         }));
         res.json(requests);
     });
@@ -67,7 +68,8 @@ router.get('/pending', [auth, checkRole(['admin'])], (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         const requests = rows.map(row => ({
             ...row,
-            images: row.images ? JSON.parse(row.images) : []
+            images: row.images ? JSON.parse(row.images) : [],
+            videos: row.videos ? JSON.parse(row.videos) : []
         }));
         res.json(requests);
     });
@@ -105,9 +107,12 @@ router.patch('/:id/status', [auth, checkRole(['admin'])], (req, res) => {
                         const combined = [...existingImages, ...newImages];
                         updateQuery = "UPDATE listings SET images = ? WHERE id = ?";
                         updateParams = [JSON.stringify(combined), listing.id];
-                    } else if (request.type === 'video' && request.videoUrl) {
-                        updateQuery = "UPDATE listings SET videoUrl = ? WHERE id = ?";
-                        updateParams = [request.videoUrl, listing.id];
+                    } else if (request.type === 'videos' && request.videos) {
+                        const existingVideos = listing.videos ? JSON.parse(listing.videos) : [];
+                        const newVideos = JSON.parse(request.videos);
+                        const combined = [...existingVideos, ...newVideos];
+                        updateQuery = "UPDATE listings SET videos = ? WHERE id = ?";
+                        updateParams = [JSON.stringify(combined), listing.id];
                     } else if (request.type === 'description' && request.description) {
                         updateQuery = "UPDATE listings SET description = ? WHERE id = ?";
                         updateParams = [request.description, listing.id];
